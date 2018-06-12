@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <body>
+    <h1>Backup XML format</h1>
+
+    <ul id="toc"></ul>
+
+    <h2><a id="BackupAttributes">Backup XML</a></h2>
+
+    <p>
+      Creating a backup, whether full or incremental, is done
+      via <code>virDomainBackupBegin()</code>, which takes an XML
+      description of the actions to perform, as well as an optional
+      second XML document <a href="formatcheckpoint.html">describing a
+      checkpoint</a> to create at the same point in time. See
+      also <a href="domainstatecapture.html">a comparison</a> between
+      the various state capture APIs.
+    </p>
+    <p>
+      There are two general modes for backups: a push mode (where the
+      hypervisor writes out the data to the destination file, which
+      may be local or remote), and a pull mode (where the hypervisor
+      creates an NBD server that a third-party client can then read as
+      needed, and which requires the use of temporary storage,
+      typically local, until the backup is complete).
+    </p>
+    <p>
+      The instructions for beginning a backup job are provided as
+      attributes and elements of the
+      top-level <code>domainbackup</code> element.  This element
+      includes an optional attribute <code>mode</code> which can be
+      either "push" or "pull" (default push).  Where elements are
+      optional on creation, <code>virDomainBackupGetXMLDesc()</code>
+      can be used to see the actual values selected (for example,
+      learning which port the NBD server is using in the pull model,
+      or what file names libvirt generated when none were supplied).
+      The following child elements are supported:
+    </p>
+    <dl>
+      <dt><code>incremental</code></dt>
+      <dd>Optional. If this element is present, it must name an
+        existing checkpoint of the domain, which will be used to make
+        this backup an incremental one (in the push model, only
+        changes since the checkpoint are written to the destination;
+        in the pull model, the NBD server uses the
+        NBD_OPT_SET_META_CONTEXT extension to advertise to the client
+        which portions of the export contain changes since the
+        checkpoint).  If omitted, a full backup is performed.
+      </dd>
+      <dt><code>server</code></dt>
+      <dd>Present only for a pull mode backup.  Contains the same
+        attributes as the <code>protocol</code> element of a disk
+        attached via NBD in the domain (such as transport, socket,
+        name, port, or tls), necessary to set up an NBD server that
+        exposes the content of each disk at the time the backup
+        started.
+      </dd>
+      <dt><code>disks</code></dt>
+      <dd>This is an optional listing of instructions for disks
+        participating in the backup (if omitted, all disks
+        participate, and libvirt attempts to generate filenames by
+        appending the current timestamp as a suffix). When provided on
+        input, disks omitted from the list do not participate in the
+        backup.  On output, the list is present but contains only the
+        disks participating in the backup job.  This element has a
+        list of <code>disk</code> sub-elements, describing anywhere
+        from one to all of the disks associated with the domain.
+        <dl>
+          <dt><code>disk</code></dt>
+          <dd>This sub-element describes the backup properties of
+            a specific disk.  The attribute <code>name</code> is
+            mandatory, and must match either the <code>&lt;target
+            dev='name'/&gt;</code> or an unambiguous <code>&lt;source
+            file='name'/&gt;</code> of one of
+            the <a href="formatdomain.html#elementsDisks">disk
+            devices</a> specified for the domain at the time of the
+            checkpoint.  The optional attribute <code>type</code> can
+            be <code>file</code>, <code>block</code>,
+            or <code>network</code>, similar to a disk declaration for
+            a domain, controls what additional sub-elements are needed
+            to describe the destination (such as <code>protocol</code>
+            for a network destination).  In push mode backups, the
+            primary sub-element is <code>target</code>; in pull mode,
+            the primary sub-element is <code>scratch</code>; but
+            either way, the primary sub-element describes the file
+            name to be used during the backup operation, similar to
+            the <code>source</code> sub-element of a domain disk. In
+            push mode, an optional sub-element <code>driver</code> can
+            also be used, with an attribute <code>type</code> to
+            specify a destination format different from
+            qcow2. Additionally, if a push backup is not
+            incremental, <code>target</code> may contain an optional
+            attribute <code>shallow="on"</code> so that the
+            destination file copies only the top-most source file in a
+            backing chain, rather than collapsing the entire chain
+            into the copy.
+          </dd>
+        </dl>
+      </dd>
+    </dl>
+
+    <h2><a id="example">Examples</a></h2>
+
+    <p>With an earlier checkpoint created created with the
+      name <code>1525889631</code>, we can make a call
+      to <code>virDomainBackupBegin()</code> to perform an incremental
+      backup of just the data changed since that checkpoint, using the
+      following XML to start a pull model NBD export of the vda disk:
+    </p>
+    <pre>
+&lt;domainbackup mode="pull"&gt;
+  &lt;incremental&gt;1525889631&lt;/incremental&gt;
+  &lt;server transport="unix" socket="/path/to/server"/&gt;
+  &lt;disks/&gt;
+    &lt;disk name='vda' type='file'&gt;
+      &lt;scratch file='/path/to/file1.scratch'/&gt;
+    &lt;/disk&gt;
+  &lt;/disks/&gt;
+&lt;/domainbackup&gt;
+    </pre>
+  </body>
+</html>
