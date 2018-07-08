@@ -29,6 +29,7 @@
 #include "configmake.h"
 #include "internal.h"
 #include "virerror.h"
+#include "checkpoint_conf.h"
 #include "datatypes.h"
 #include "domain_addr.h"
 #include "domain_conf.h"
@@ -3330,6 +3331,7 @@ static void virDomainObjDispose(void *obj)
         (dom->privateDataFreeFunc)(dom->privateData);
 
     virDomainSnapshotObjListFree(dom->snapshots);
+    virDomainCheckpointObjListFree(dom->checkpoints);
 }
 
 virDomainObjPtr
@@ -3357,6 +3359,9 @@ virDomainObjNew(virDomainXMLOptionPtr xmlopt)
     }
 
     if (!(domain->snapshots = virDomainSnapshotObjListNew()))
+        goto error;
+
+    if (!(domain->checkpoints = virDomainCheckpointObjListNew()))
         goto error;
 
     virObjectLock(domain);
@@ -27920,7 +27925,8 @@ virDomainDefFormatInternal(virBufferPtr buf,
                   VIR_DOMAIN_DEF_FORMAT_ACTUAL_NET |
                   VIR_DOMAIN_DEF_FORMAT_PCI_ORIG_STATES |
                   VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST |
-                  VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS,
+                  VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS |
+                  VIR_DOMAIN_DEF_FORMAT_CHECKPOINTS,
                   -1);
 
     if (!(type = virDomainVirtTypeToString(def->virtType))) {
@@ -28424,6 +28430,21 @@ virDomainDefFormatInternal(virBufferPtr buf,
             goto error;
     }
 
+    if (flags & VIR_DOMAIN_DEF_FORMAT_CHECKPOINTS) {
+        unsigned int snapflags = flags & VIR_DOMAIN_DEF_FORMAT_SECURE ?
+            VIR_DOMAIN_CHECKPOINT_FORMAT_SECURE : 0;
+
+        if (!(data && data->checkpoints)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("checkpoints requested but not provided"));
+            goto error;
+        }
+        if (virDomainCheckpointObjListFormat(buf, data->checkpoints,
+                                             data->current_check, caps,
+                                             xmlopt, snapflags) < 0)
+            goto error;
+    }
+
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</domain>\n");
 
@@ -28455,6 +28476,8 @@ unsigned int virDomainDefFormatConvertXMLFlags(unsigned int flags)
         formatFlags |= VIR_DOMAIN_DEF_FORMAT_MIGRATABLE;
     if (flags & VIR_DOMAIN_XML_SNAPSHOTS)
         formatFlags |= VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS;
+    if (flags & VIR_DOMAIN_XML_CHECKPOINTS)
+        formatFlags |= VIR_DOMAIN_DEF_FORMAT_CHECKPOINTS;
 
     return formatFlags;
 }
@@ -28481,7 +28504,8 @@ virDomainDefFormatFull(virDomainDefPtr def,
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
     virCheckFlags(VIR_DOMAIN_DEF_FORMAT_COMMON_FLAGS |
-                  VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS, NULL);
+                  VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS |
+                  VIR_DOMAIN_DEF_FORMAT_CHECKPOINTS, NULL);
     if (virDomainDefFormatInternal(&buf, def, data, flags, NULL) < 0)
         return NULL;
 

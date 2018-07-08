@@ -119,6 +119,12 @@ typedef virDomainMemballoonDef *virDomainMemballoonDefPtr;
 typedef struct _virDomainNVRAMDef virDomainNVRAMDef;
 typedef virDomainNVRAMDef *virDomainNVRAMDefPtr;
 
+typedef struct _virDomainCheckpointObj virDomainCheckpointObj;
+typedef virDomainCheckpointObj *virDomainCheckpointObjPtr;
+
+typedef struct _virDomainCheckpointObjList virDomainCheckpointObjList;
+typedef virDomainCheckpointObjList *virDomainCheckpointObjListPtr;
+
 typedef struct _virDomainSnapshotObj virDomainSnapshotObj;
 typedef virDomainSnapshotObj *virDomainSnapshotObjPtr;
 
@@ -2705,6 +2711,9 @@ struct _virDomainObj {
 
     bool hasManagedSave;
 
+    virDomainCheckpointObjListPtr checkpoints;
+    virDomainCheckpointObjPtr current_checkpoint;
+
     void *privateData;
     void (*privateDataFreeFunc)(void *);
 
@@ -3121,6 +3130,7 @@ typedef enum {
     VIR_DOMAIN_DEF_FORMAT_ALLOW_BOOT      = 1 << 7,
     VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST    = 1 << 8,
     VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS       = 1 << 9,
+    VIR_DOMAIN_DEF_FORMAT_CHECKPOINTS     = 1 << 10,
 } virDomainDefFormatFlags;
 
 /* Use these flags to skip specific domain ABI consistency checks done
@@ -3201,6 +3211,8 @@ typedef struct _virDomainDefFormatData {
     virCapsPtr caps;
     virDomainSnapshotObjListPtr snapshots;
     virDomainSnapshotObjPtr current_snapshot;
+    virDomainCheckpointObjListPtr checkpoints;
+    virDomainCheckpointObjPtr current_check;
 } virDomainDefFormatData;
 typedef struct _virDomainDefFormatData *virDomainDefFormatDataPtr;
 
