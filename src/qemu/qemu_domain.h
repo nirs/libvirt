@@ -1,7 +1,7 @@
 /*
  * qemu_domain.h: QEMU domain private state
  *
- * Copyright (C) 2006-2016 Red Hat, Inc.
+ * Copyright (C) 2006-2019 Red Hat, Inc.
  * Copyright (C) 2006 Daniel P. Berrange
  *
  * This library is free software; you can redistribute it and/or
@@ -697,9 +697,10 @@ int qemuDomainSnapshotDiscard(virQEMUDriverPtr driver,
                               bool update_current,
                               bool metadata_only);
 
-typedef struct _virQEMUSnapRemove virQEMUSnapRemove;
-typedef virQEMUSnapRemove *virQEMUSnapRemovePtr;
-struct _virQEMUSnapRemove {
+/* Used for both snapshots and checkpoints */
+typedef struct _virQEMUDependentRemove virQEMUDependentRemove;
+typedef virQEMUDependentRemove *virQEMUDependentRemovePtr;
+struct _virQEMUDependentRemove {
     virQEMUDriverPtr driver;
     virDomainObjPtr vm;
     int err;
@@ -713,6 +714,25 @@ int qemuDomainSnapshotDiscardAll(void *payload,
 
 int qemuDomainSnapshotDiscardAllMetadata(virQEMUDriverPtr driver,
                                          virDomainObjPtr vm);
+
+int qemuDomainCheckpointWriteMetadata(virDomainObjPtr vm,
+                                      virDomainCheckpointObjPtr checkpoint,
+                                      virCapsPtr caps,
+                                      virDomainXMLOptionPtr xmlopt,
+                                      const char *checkpointDir);
+
+int qemuDomainCheckpointDiscard(virQEMUDriverPtr driver,
+                                virDomainObjPtr vm,
+                                virDomainCheckpointObjPtr chk,
+                                bool update_current,
+                                bool metadata_only);
+
+int qemuDomainCheckpointDiscardAll(void *payload,
+                                   const void *name,
+                                   void *data);
+
+int qemuDomainCheckpointDiscardAllMetadata(virQEMUDriverPtr driver,
+                                           virDomainObjPtr vm);
 
 void qemuDomainRemoveInactive(virQEMUDriverPtr driver,
                               virDomainObjPtr vm);
