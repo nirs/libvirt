@@ -3265,6 +3265,8 @@ int virDomainDiskInsert(virDomainDefPtr def,
     ATTRIBUTE_RETURN_CHECK;
 void virDomainDiskInsertPreAlloced(virDomainDefPtr def,
                                    virDomainDiskDefPtr disk);
+int virDomainStorageNetworkParseHost(xmlNodePtr hostnode,
+                                     virStorageNetHostDefPtr host);
 int virDomainDiskDefAssignAddress(virDomainXMLOptionPtr xmlopt,
                                   virDomainDiskDefPtr def,
                                   const virDomainDef *vmdef);
