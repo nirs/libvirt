@@ -27918,7 +27918,8 @@ virDomainDefFormatInternal(virBufferPtr buf,
                   VIR_DOMAIN_DEF_FORMAT_STATUS |
                   VIR_DOMAIN_DEF_FORMAT_ACTUAL_NET |
                   VIR_DOMAIN_DEF_FORMAT_PCI_ORIG_STATES |
-                  VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST,
+                  VIR_DOMAIN_DEF_FORMAT_CLOCK_ADJUST |
+                  VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS,
                   -1);
 
     if (!(type = virDomainVirtTypeToString(def->virtType))) {
@@ -28407,6 +28408,21 @@ virDomainDefFormatInternal(virBufferPtr buf,
 
     virDomainSEVDefFormat(buf, def->sev);
 
+    if (flags & VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS) {
+        unsigned int snapflags = flags & VIR_DOMAIN_DEF_FORMAT_SECURE ?
+            VIR_DOMAIN_SNAPSHOT_FORMAT_SECURE : 0;
+
+        if (!(data && data->snapshots)) {
+            virReportError(VIR_ERR_INTERNAL_ERROR, "%s",
+                           _("snapshots requested but not provided"));
+            goto error;
+        }
+        if (virDomainSnapshotObjListFormat(buf, uuidstr, data->snapshots,
+                                           data->current_snapshot, caps,
+                                           xmlopt, snapflags) < 0)
+            goto error;
+    }
+
     virBufferAdjustIndent(buf, -2);
     virBufferAddLit(buf, "</domain>\n");
 
@@ -28460,7 +28476,8 @@ virDomainDefFormatFull(virDomainDefPtr def,
 {
     virBuffer buf = VIR_BUFFER_INITIALIZER;
 
-    virCheckFlags(VIR_DOMAIN_DEF_FORMAT_COMMON_FLAGS, NULL);
+    virCheckFlags(VIR_DOMAIN_DEF_FORMAT_COMMON_FLAGS |
+                  VIR_DOMAIN_DEF_FORMAT_SNAPSHOTS, NULL);
     if (virDomainDefFormatInternal(&buf, def, data, flags, NULL) < 0)
         return NULL;
 
