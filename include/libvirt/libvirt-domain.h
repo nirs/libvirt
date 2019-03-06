@@ -1571,6 +1571,7 @@ typedef enum {
     VIR_DOMAIN_XML_UPDATE_CPU   = (1 << 2), /* update guest CPU requirements according to host CPU */
     VIR_DOMAIN_XML_MIGRATABLE   = (1 << 3), /* dump XML suitable for migration */
     VIR_DOMAIN_XML_SNAPSHOTS    = (1 << 4), /* include all snapshots in the dump */
+    VIR_DOMAIN_XML_CHECKPOINTS  = (1 << 5), /* include all checkpoints in the dump */
 } virDomainXMLFlags;
 
 typedef enum {
@@ -1775,6 +1776,9 @@ typedef enum {
     VIR_DOMAIN_UNDEFINE_NVRAM              = (1 << 2), /* Also remove any
                                                           nvram file */
     VIR_DOMAIN_UNDEFINE_KEEP_NVRAM         = (1 << 3), /* Keep nvram file */
+    VIR_DOMAIN_UNDEFINE_CHECKPOINTS_METADATA= (1 << 4),/* If last use of domain,
+                                                          then also remove any
+                                                          checkpoint metadata */
 
     /* Future undefine control flags should come here. */
 } virDomainUndefineFlagsValues;
@@ -1813,6 +1817,9 @@ typedef enum {
 
     VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT   = 1 << 12,
     VIR_CONNECT_LIST_DOMAINS_NO_SNAPSHOT    = 1 << 13,
+
+    VIR_CONNECT_LIST_DOMAINS_HAS_CHECKPOINT = 1 << 14,
+    VIR_CONNECT_LIST_DOMAINS_NO_CHECKPOINT  = 1 << 15,
 } virConnectListAllDomainsFlags;
 
 int                     virConnectListAllDomains (virConnectPtr conn,

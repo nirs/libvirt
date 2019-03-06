@@ -2576,6 +2576,11 @@ virDomainGetControlInfo(virDomainPtr domain,
  * one of those snapshots is current. Note that some older servers
  * silently ignore this flag instead of diagnosing it as unsupported.
  *
+ * If @flags contains VIR_DOMAIN_XML_CHECKPOINTS, the XML will include
+ * an additional <checkpoints> child element describing all checkpoints
+ * belonging to the domain, including an attribute current='name' if
+ * one of those checkpoints is current.
+ *
  * Returns a 0 terminated UTF-8 encoded XML instance, or NULL in case of error.
  *         the caller must free() the returned value.
  */
@@ -6450,7 +6455,9 @@ virConnectListDefinedDomains(virConnectPtr conn, char **const names,
  * VIR_CONNECT_LIST_DOMAINS_NO_AUTOSTART, for filtering based on autostart;
  * VIR_CONNECT_LIST_DOMAINS_HAS_SNAPSHOT and
  * VIR_CONNECT_LIST_DOMAINS_NO_SNAPSHOT, for filtering based on whether
- * a domain has snapshots.
+ * a domain has snapshots; VIR_CONNECT_LIST_DOMAINS_HAS_CHECKPOINT and
+ * VIR_CONNECT_LIST_DOMAINS_NO_CHECKPOINT, for filtering based on whether
+ * a domain has checkpoints.
  *
  * Example of usage:
  *
